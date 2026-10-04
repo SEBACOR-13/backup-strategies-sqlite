@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlockBackupLab</title>
+  <meta name="description" content="Respaldos completos, diferenciales e incrementales a nivel de página sobre SQLite, con cifrado y retención GFS." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>" />
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <header class="cabecera">
+    <div>
+      <h1>🧱 BlockBackupLab</h1>
+      <p>Completo vs. diferencial vs. incremental, <strong>bloque a bloque</strong>, sobre un archivo SQLite real.</p>
+    </div>
+    <div class="autor">
+      <span>Autor: <strong>Sebastian Alejandro Cortez Apaza</strong></span>
+      <a href="https://github.com/SEBACOR-13/backup-strategies-sqlite" target="_blank" rel="noopener">Código en GitHub ↗</a>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="panel" id="panel-control">
+      <div class="fila">
+        <div class="dia"><small>Día simulado</small><span id="dia">0</span><small id="dia-nombre">domingo</small></div>
+        <label class="crece">Política de respaldo programado
+          <select id="sel-politica"></select>
+        </label>
+        <label class="crece">Frase de cifrado (AES-256-GCM)
+          <input id="txt-frase" value="tacna-2026" />
+        </label>
+      </div>
+      <div class="acciones">
+        <button id="btn-dia">▶ Avanzar 1 día</button>
+        <button id="btn-semana">⏩ Avanzar 1 semana</button>
+        <select id="sel-desastre"></select>
+        <button id="btn-desastre" class="rojo">💥 Desastre</button>
+        <button id="btn-reiniciar" class="gris">↺ Reiniciar</button>
+      </div>
+      <p class="ayuda">Cada día se registran ~120 movimientos de inventario y, al cierre, se ejecuta el respaldo que indique la política.</p>
+    </section>
+
+    <div class="rejilla">
+      <section class="panel">
+        <h2>Base de datos <code>inventario.db</code></h2>
+        <table class="tabla" id="tabla-huella"><thead><tr><th>Tabla</th><th>Filas</th></tr></thead><tbody></tbody></table>
+        <div class="indicadores">
+          <div class="indicador"><span id="ind-tam">—</span><small>tamaño del archivo</small></div>
+          <div class="indicador"><span id="ind-pag">—</span><small>páginas de 4 KB</small></div>
+          <div class="indicador" id="ind-estado-c"><span id="ind-estado">Sana</span><small>estado</small></div>
+        </div>
+        <h3>Mapa de páginas del último respaldo</h3>
+        <div id="mapa" class="mapa" aria-label="Páginas copiadas en el último respaldo"></div>
+        <p class="leyenda"><i class="c"></i>copiada en el último respaldo <i class="s"></i>sin cambios (no se copia)</p>
+      </section>
+
+      <section class="panel">
+        <h2>Comparación de políticas (mismos datos)</h2>
+        <div id="comparacion"></div>
+        <p class="ayuda">Almacenamiento acumulado sin comprimir y eslabones que habría que leer para restaurar el día actual.</p>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Catálogo de respaldos</h2>
+      <div class="desliza">
+        <table class="tabla" id="tabla-catalogo">
+          <thead><tr><th>ID</th><th>Día</th><th>Tipo</th><th>Base</th><th>Páginas copiadas</th><th>Crudo</th><th>gzip + AES</th><th>Retención GFS</th><th></th></tr></thead>
+          <tbody><tr class="vacio"><td colspan="9">Avanza un día para crear el primer respaldo.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-restaurar">
+      <h2>Restaurar</h2>
+      <div class="fila">
+        <label class="crece">Volver al cierre del día
+          <select id="sel-restaurar"></select>
+        </label>
+        <button id="btn-restaurar" class="verde">♻️ Restaurar y verificar</button>
+      </div>
+      <div id="cadena" class="cadena"></div>
+      <div id="resultado"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Bitácora</h2>
+      <ol id="bitacora" class="bitacora"></ol>
+    </section>
+
+    <section class="panel teoria">
+      <h2>Ideas clave</h2>
+      <ul>
+        <li><strong>Completo:</strong> copia todo; restaurar es leer un solo archivo, pero ocupa más y tarda más en crearse.</li>
+        <li><strong>Diferencial:</strong> copia lo que cambió desde el último completo; crece cada día, pero restaurar solo necesita 2 piezas.</li>
+        <li><strong>Incremental:</strong> copia lo que cambió desde el respaldo anterior; es el más pequeño, pero la cadena es frágil: si falta un eslabón, todo lo posterior se pierde.</li>
+        <li><strong>3-2-1-1-0:</strong> 3 copias, 2 medios, 1 fuera del sitio, 1 inmutable o desconectada (contra ransomware) y 0 errores en la verificación.</li>
+        <li><strong>Cifra y verifica:</strong> AES-GCM detecta cualquier alteración del paquete; el SHA-256 del archivo reconstruido confirma la restauración.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="pie">SQLite ejecutado con <a href="https://sql.js.org" target="_blank" rel="noopener">sql.js</a> (WebAssembly) · Desplegado automáticamente con GitHub Actions en GitHub Pages</footer>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
